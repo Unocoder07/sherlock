@@ -1,0 +1,33 @@
+# Gradle version catalog — single place to pin backend dependency versions.
+# Consumed by service modules as they are added (M1+).
+
+[versions]
+java = "21"
+springBoot = "3.3.4"
+springDependencyManagement = "1.1.6"
+protobuf = "4.28.2"
+protobufPlugin = "0.9.4"
+kafka = "3.8.0"
+testcontainers = "1.20.2"
+jackson = "2.17.2"
+
+[libraries]
+spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter", version.ref = "springBoot" }
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web", version.ref = "springBoot" }
+spring-boot-starter-websocket = { module = "org.springframework.boot:spring-boot-starter-websocket", version.ref = "springBoot" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security", version.ref = "springBoot" }
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa", version.ref = "springBoot" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator", version.ref = "springBoot" }
+spring-kafka = { module = "org.springframework.kafka:spring-kafka" }
+spring-boot-starter-data-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis", version.ref = "springBoot" }
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+postgresql = { module = "org.postgresql:postgresql", version = "42.7.4" }
+flyway-core = { module = "org.flywaydb:flyway-core", version = "10.17.3" }
+testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-kafka = { module = "org.testcontainers:kafka", version.ref = "testcontainers" }
+testcontainers-postgres = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }

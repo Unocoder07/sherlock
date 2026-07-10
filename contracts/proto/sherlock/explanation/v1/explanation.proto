@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package sherlock.explanation.v1;
+
+option java_multiple_files = true;
+option java_package = "com.sherlock.contracts.explanation.v1";
+option java_outer_classname = "ExplanationProto";
+
+// Topic: verdict.enriched  (producer: Explanation Engine)
+// The verdict, with the numeric contribution breakdown rendered into
+// human-readable reasons + a one-line headline. This is what the WS Gateway
+// pushes to the browser (doc 02 §7 / interaction matrix: Explanation -> WS GW).
+
+// One contribution rendered as an English sentence.
+message RenderedReason {
+  string text = 1;            // e.g. "✓ Voice stayed dominant"
+  string evidence_type = 2;   // the EVIDENCE_TYPE_* it came from (for styling/keys)
+  int32 polarity = 3;         // +1 corroborating, -1 contradicting
+  float magnitude = 4;        // |value| * weight — used for ordering/emphasis
+}
+
+message EnrichedVerdict {
+  string meeting_id = 1;
+  string participant_id = 2;
+  float score = 3;                // 0..1
+  string state = 4;               // clean label, prefix stripped (e.g. "IDENTIFIED")
+  string previous_state = 5;
+  float separation = 6;           // score(top) - score(second)
+  string headline = 7;            // one-line summary derived from state
+  repeated RenderedReason reasons = 8;   // ranked, highest magnitude first
+  int64 occurred_at_ms = 9;
+}

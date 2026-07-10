@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package sherlock.signals.v1;
+
+option java_multiple_files = true;
+option java_package = "com.sherlock.contracts.signals.v1";
+option java_outer_classname = "AudioSignalsProto";
+
+// Topic: audio.signals  (producer: Audio Processing Service)
+// Reports WHAT THE MIC HEARS. Emits observations (voice embeddings + VAD +
+// dominance), not identity decisions.
+
+enum AudioSignalType {
+  AUDIO_SIGNAL_TYPE_UNSPECIFIED = 0;
+  AUDIO_SIGNAL_TYPE_SPEAKING = 1;
+  AUDIO_SIGNAL_TYPE_SILENCE = 2;
+  AUDIO_SIGNAL_TYPE_MULTIPLE_SPEAKERS = 3;
+  AUDIO_SIGNAL_TYPE_VOICE_EMBEDDING = 4;  // carries embedding_ref for anchoring
+}
+
+message AudioSignal {
+  string meeting_id = 1;
+  string participant_id = 2;
+  AudioSignalType type = 3;
+
+  bool voice_active = 4;                  // Silero VAD gate
+  float speaking_ratio = 5;              // 0..1 fraction of window this participant spoke
+  float dominance = 6;                   // 0..1 share of total speech in window
+  float snr = 7;                         // signal-to-noise — feeds reliability
+  bool multiple_speakers = 8;
+
+  // Object-store ref to the voice embedding vector (pyannote). Consumed by the
+  // Identity Anchor Service for clustering/consistency.
+  string embedding_ref = 9;
+
+  int64 window_start_ms = 10;
+  int64 window_end_ms = 11;
+}

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package sherlock.timeline.v1;
+
+option java_multiple_files = true;
+option java_package = "com.sherlock.contracts.timeline.v1";
+option java_outer_classname = "TimelineProto";
+
+// Topic: timeline.events  (producer: Timeline Service)
+// An immutable, ordered history of what happened and why (doc 02 §6). Each entry
+// is an append-only record derived from the enriched verdict stream; the same
+// row is persisted in PostgreSQL and pushed live for the dashboard timeline.
+
+enum EntryKind {
+  ENTRY_KIND_UNSPECIFIED = 0;
+  ENTRY_KIND_STATE_TRANSITION = 1;   // state changed (e.g. UNCERTAIN -> IDENTIFIED)
+  ENTRY_KIND_SCORE_INFLECTION = 2;   // notable score move without a state change
+  ENTRY_KIND_ALERT = 3;              // reserved: notable evidence / external alert
+}
+
+message TimelineEntry {
+  string meeting_id = 1;
+  string participant_id = 2;
+  string entry_id = 3;            // stable id (also the DB primary key)
+  EntryKind kind = 4;
+  string from_state = 5;          // clean label; empty for non-transition kinds
+  string to_state = 6;            // clean label
+  float score = 7;                // 0..1 at the time of the entry
+  string headline = 8;            // short human summary (from the enriched verdict)
+  string detail = 9;              // longer text (top reason, etc.)
+  int64 occurred_at_ms = 10;      // event time (ordering key)
+}

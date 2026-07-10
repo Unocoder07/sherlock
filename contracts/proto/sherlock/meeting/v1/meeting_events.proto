@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package sherlock.meeting.v1;
+
+option java_multiple_files = true;
+option java_package = "com.sherlock.contracts.meeting.v1";
+option java_outer_classname = "MeetingEventsProto";
+
+// Topic: meeting.events  (producer: Meeting Service)
+// Lifecycle + roster + low-trust metadata. Metadata is the WEAKEST signal by design.
+
+message MeetingCreated {
+  string meeting_id = 1;
+  string title = 2;
+  string external_ref = 3;      // platform meeting id (optional)
+  int64 scheduled_at_ms = 4;
+}
+
+message MeetingStateChanged {
+  string meeting_id = 1;
+  MeetingState state = 2;
+}
+
+enum MeetingState {
+  MEETING_STATE_UNSPECIFIED = 0;
+  MEETING_STATE_SCHEDULED = 1;
+  MEETING_STATE_LIVE = 2;
+  MEETING_STATE_ENDED = 3;
+}
+
+message ParticipantJoined {
+  string meeting_id = 1;
+  string participant_id = 2;
+  string display_name = 3;      // may be generic: "iPhone", "Guest" — LOW trust
+  string platform_user_id = 4;  // metadata — LOW trust
+  bool camera_on = 5;
+}
+
+message ParticipantLeft {
+  string meeting_id = 1;
+  string participant_id = 2;
+}
+
+message ScreenShareChanged {
+  string meeting_id = 1;
+  string participant_id = 2;
+  bool sharing = 3;
+}
+
+// Optional, reference-anchored mode only: an externally-verified reference was
+// captured LIVE at join (never a pre-upload). Points at object-store embeddings.
+message ReferenceCaptured {
+  string meeting_id = 1;
+  string participant_id = 2;
+  string face_ref_uri = 3;
+  string voice_ref_uri = 4;
+  string reference_source = 5;  // LIVE_ID_CAPTURE | PRIOR_SCREENING
+}

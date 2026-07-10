@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package sherlock.common.v1;
+
+option java_multiple_files = true;
+option java_package = "com.sherlock.contracts.common.v1";
+option java_outer_classname = "EnvelopeProto";
+
+// EventEnvelope is the common wrapper for EVERY message on the Kafka bus.
+// The concrete payload (a typed message from another package) is carried as
+// serialized bytes in `payload`, discriminated by `event_type`. This keeps a
+// single uniform envelope across all topics while allowing per-event schemas.
+//
+// Partition key = meeting_id (ordering guaranteed per meeting).
+message EventEnvelope {
+  // Unique id of this event. Idempotency key — consumers must dedupe on it.
+  string event_id = 1;
+
+  // Fully-qualified event type, e.g. "sherlock.signals.v1.VideoSignal".
+  // Used to select the payload parser.
+  string event_type = 2;
+
+  // Schema version of the payload message (bump on breaking payload changes).
+  int32 schema_version = 3;
+
+  // Partition key. Every event for one meeting lands on the same partition.
+  string meeting_id = 4;
+
+  // Participant this event concerns; empty for meeting-level events.
+  string participant_id = 5;
+
+  // EVENT time (source clock) — drives temporal fusion + decay.
+  int64 occurred_at_ms = 6;
+
+  // PROCESSING time (producer wall clock) — drives lag/latency monitoring.
+  int64 emitted_at_ms = 7;
+
+  // Producing service + version, e.g. "video-processing@0.1.0".
+  string producer = 8;
+
+  // W3C traceparent for end-to-end distributed tracing.
+  string trace_id = 9;
+
+  // Serialized typed payload (a message from the matching event package).
+  bytes payload = 10;
+}

@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  contracts:
+    name: Contracts (lint + codegen)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lint proto
+        working-directory: contracts
+        run: buf lint
+      - name: Verify codegen succeeds
+        working-directory: contracts
+        run: buf generate
+      # On PRs, block breaking changes against the base branch.
+      - name: Breaking-change check
+        if: github.event_name == 'pull_request'
+        working-directory: contracts
+        run: buf breaking --against "https://github.com/${{ github.repository }}.git#branch=main,subdir=contracts"
+
+  pipeline-smoke:
+    name: Pipeline smoke (infra round-trip)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start infrastructure
+        run: docker compose -f docker-compose.infra.yml up -d
+      - name: Wait for topic creation to finish
+        run: |
+          docker wait sherlock-kafka-init || true
+          docker logs sherlock-kafka-init
+      - name: Run smoke test
+        run: docker compose -f docker-compose.smoke.yml run --rm --build smoke
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.infra.yml logs
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.infra.yml down -v
+
+  # Backend / frontend build jobs are added as those modules land (M1+).

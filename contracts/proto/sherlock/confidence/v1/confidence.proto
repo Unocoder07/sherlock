@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package sherlock.confidence.v1;
+
+option java_multiple_files = true;
+option java_package = "com.sherlock.contracts.confidence.v1";
+option java_outer_classname = "ConfidenceProto";
+
+// Topic: confidence.updates  (producer: Confidence Engine)
+// The verdict: candidate + score + state + the contribution breakdown that the
+// Explanation Engine turns into human-readable reasons.
+
+enum ParticipantState {
+  PARTICIPANT_STATE_UNSPECIFIED = 0;
+  PARTICIPANT_STATE_OBSERVING = 1;         // zero knowledge, anchor not formed
+  PARTICIPANT_STATE_ANCHORING = 2;         // provisional identity forming
+  PARTICIPANT_STATE_UNCERTAIN = 3;
+  PARTICIPANT_STATE_IDENTIFIED = 4;
+  PARTICIPANT_STATE_PROXY_SUSPECTED = 5;
+  PARTICIPANT_STATE_CANDIDATE_SWITCHED = 6;
+  PARTICIPANT_STATE_SIGNAL_LOST = 7;
+  PARTICIPANT_STATE_LEFT = 8;
+}
+
+// Per evidence-type contribution to the current score (for explainability).
+message Contribution {
+  string evidence_type = 1;
+  float value = 2;            // signed contribution to the log-odds/score
+  float weight = 3;
+  int32 polarity = 4;
+}
+
+message ConfidenceUpdate {
+  string meeting_id = 1;
+  string participant_id = 2;      // the candidate this verdict concerns
+  float score = 3;                // 0..1
+  ParticipantState state = 4;
+  ParticipantState previous_state = 5;
+  float separation = 6;           // score(top) - score(second)
+  repeated Contribution contributions = 7;
+  int64 occurred_at_ms = 8;
+}

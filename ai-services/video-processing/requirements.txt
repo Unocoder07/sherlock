@@ -1,0 +1,13 @@
+# Video Processing Service (M5) — Python 3.11.
+# Kafka + object store + face detection/embedding. Pinned for reproducible images.
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+pydantic-settings==2.3.4
+confluent-kafka==2.5.3
+minio==7.2.7
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+onnxruntime==1.18.1
+insightface==0.7.3
+protobuf==5.27.2
+prometheus-client==0.20.0

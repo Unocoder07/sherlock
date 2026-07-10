@@ -1,0 +1,61 @@
+server:
+  port: ${SERVER_PORT:8096}
+
+spring:
+  application:
+    name: timeline-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sherlock}
+    username: ${DB_USER:sherlock}
+    password: ${DB_PASSWORD:sherlock}
+
+  jpa:
+    hibernate:
+      ddl-auto: none          # Flyway owns the schema
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    schemas: timeline
+    default-schema: timeline
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      group-id: timeline-service
+      # Rebuild the full history from retained verdicts on a cold start.
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+
+# Sherlock-specific knobs
+sherlock:
+  timeline:
+    # Minimum absolute score move (without a state change) that earns a
+    # SCORE_INFLECTION entry, so the timeline captures notable swings only.
+    inflection-threshold: 0.15
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    com.sherlock: INFO

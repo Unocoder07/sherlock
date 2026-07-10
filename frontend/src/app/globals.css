@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Palette roles from the data-viz reference palette (dark surface). The dashboard
+ * is dark-first (a monitoring surface); status colors are reserved and always
+ * paired with a text label, never carried by color alone.
+ */
+:root {
+  --page-plane: #0d0d0d;
+  --surface-1: #1a1a19;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --hairline: #2c2c2a;
+  --border-ring: rgba(255, 255, 255, 0.1);
+
+  --series-blue: #3987e5;
+  --series-blue-track: #184f95;
+
+  /* status palette (fixed, never themed) */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+}
+
+html,
+body {
+  background: var(--page-plane);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-ring);
+  border-radius: 12px;
+}

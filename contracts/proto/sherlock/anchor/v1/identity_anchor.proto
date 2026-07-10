@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package sherlock.anchor.v1;
+
+option java_multiple_files = true;
+option java_package = "com.sherlock.contracts.anchor.v1";
+option java_outer_classname = "IdentityAnchorProto";
+
+// Topic: identity.anchor  (producer: Identity Anchor Service)
+// The zero-knowledge core: the system builds a self-reference during the
+// interview and reports both the anchor lifecycle and per-window consistency.
+
+// ── Anchor lifecycle ────────────────────────────────────────────────────────
+enum AnchorLifecycle {
+  ANCHOR_LIFECYCLE_UNSPECIFIED = 0;
+  ANCHOR_LIFECYCLE_OBSERVING = 1;   // zero knowledge, collecting embeddings
+  ANCHOR_LIFECYCLE_ANCHORING = 2;   // clustering + A/V binding forming
+  ANCHOR_LIFECYCLE_LOCKED = 3;      // stable self-reference established
+  ANCHOR_LIFECYCLE_DRIFT = 4;       // drifting away from the locked anchor
+  ANCHOR_LIFECYCLE_BROKEN = 5;      // anchor invalidated (switch / relay)
+}
+
+message AnchorEvent {
+  string meeting_id = 1;
+  string anchored_participant_id = 2;  // who the system anchored on
+  AnchorLifecycle lifecycle = 3;
+  string mode = 4;                     // SELF | REFERENCE_SEEDED
+  float av_binding_score = 5;          // 0..1 visible face == active voice
+  float stability = 6;                 // 0..1 cluster tightness / sustained dominance
+  int64 occurred_at_ms = 7;
+}
+
+// ── Per-window consistency signals (feed the Evidence Fusion Engine) ─────────
+enum ConsistencyType {
+  CONSISTENCY_TYPE_UNSPECIFIED = 0;
+  CONSISTENCY_TYPE_FACE_CONSISTENT_WITH_ANCHOR = 1;   // +
+  CONSISTENCY_TYPE_VOICE_CONSISTENT_WITH_ANCHOR = 2;  // +
+  CONSISTENCY_TYPE_AV_BINDING = 3;                    // + visible face is the speaker
+  CONSISTENCY_TYPE_ANCHOR_MISMATCH = 4;               // - present person != anchor
+  CONSISTENCY_TYPE_AV_BINDING_BROKEN = 5;             // - speaker is off-screen
+  CONSISTENCY_TYPE_FACE_CHANGED = 6;                  // - embedding drift
+  CONSISTENCY_TYPE_VOICE_CHANGED = 7;                 // -
+}
+
+message ConsistencySignal {
+  string meeting_id = 1;
+  string participant_id = 2;
+  ConsistencyType type = 3;
+  float score = 4;            // 0..1 strength of the consistency/inconsistency
+  float reliability = 5;      // 0..1 confidence in this observation
+  int64 occurred_at_ms = 6;
+}

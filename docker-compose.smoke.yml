@@ -1,0 +1,22 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Sherlock — standalone M0 smoke test.
+# Joins the already-running infra via the EXTERNAL `sherlock` network, so it never
+# tries to (re)create Kafka. Requires infra to be up first.
+#
+#   docker compose -f docker-compose.infra.yml up -d          # start infra
+#   docker compose -f docker-compose.smoke.yml run --rm smoke # run smoke test
+# ─────────────────────────────────────────────────────────────────────────────
+name: sherlock-smoke
+
+services:
+  smoke:
+    build: ./tools/smoke
+    environment:
+      KAFKA_BOOTSTRAP: "kafka:9092"
+      SMOKE_TOPIC: "smoke.test"
+    networks: [sherlock]
+
+networks:
+  sherlock:
+    external: true
+    name: sherlock

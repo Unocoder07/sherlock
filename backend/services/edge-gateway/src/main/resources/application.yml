@@ -1,0 +1,36 @@
+server:
+  port: ${SERVER_PORT:8094}
+
+spring:
+  application:
+    name: edge-gateway
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      group-id: edge-gateway
+      # The gateway is a live fan-out; the per-subscriber snapshot is served from
+      # its own in-memory cache, so it only needs updates from now on, not replay.
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+
+# Sherlock-specific knobs
+sherlock:
+  cors:
+    # Comma-separated browser origins allowed to open the WS handshake.
+    allowed-origins: ${SHERLOCK_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    com.sherlock: INFO

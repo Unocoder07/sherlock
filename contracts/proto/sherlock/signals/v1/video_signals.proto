@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package sherlock.signals.v1;
+
+option java_multiple_files = true;
+option java_package = "com.sherlock.contracts.signals.v1";
+option java_outer_classname = "VideoSignalsProto";
+
+// Topic: video.signals  (producer: Video Processing Service)
+// Reports WHAT THE CAMERA SEES per participant per window. It does NOT decide
+// identity — it emits observations (embeddings + presence + lip activity).
+
+enum VideoSignalType {
+  VIDEO_SIGNAL_TYPE_UNSPECIFIED = 0;
+  VIDEO_SIGNAL_TYPE_FACE_PRESENT = 1;
+  VIDEO_SIGNAL_TYPE_FACE_ABSENT = 2;     // camera off / occluded
+  VIDEO_SIGNAL_TYPE_MULTIPLE_FACES = 3;
+  VIDEO_SIGNAL_TYPE_FACE_EMBEDDING = 4;  // carries embedding_ref for anchoring
+}
+
+message VideoSignal {
+  string meeting_id = 1;
+  string participant_id = 2;
+  VideoSignalType type = 3;
+
+  int32 face_count = 4;
+  float detection_conf = 5;              // 0..1 detector confidence
+  float quality = 6;                     // 0..1 blur/pose/illumination composite
+
+  // Object-store ref to the face embedding vector (InsightFace). Consumed by the
+  // Identity Anchor Service for clustering/consistency — not the raw bytes.
+  string embedding_ref = 7;
+
+  // Lip-activity score (0..1) in this window — the video half of audio-visual
+  // binding. Correlated against VAD to bind the visible face to the active voice.
+  float lip_activity = 8;
+
+  int64 window_start_ms = 9;
+  int64 window_end_ms = 10;
+}

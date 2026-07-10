@@ -1,0 +1,47 @@
+# ── OS ─────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDE ────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# ── Java / Gradle ──────────────────────────────
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+out/
+bin/
+
+# ── Python ─────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env.local
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Node / Frontend ────────────────────────────
+node_modules/
+.next/
+dist/
+coverage/
+
+# ── Secrets / env ──────────────────────────────
+.env
+!.env.example
+
+# ── Contracts codegen (generated) ──────────────
+contracts/gen-java/
+contracts/gen-python/
+
+# ── Docker / data volumes ──────────────────────
+**/data/
+
+# ── Build / verify logs ────────────────────────
+*.log

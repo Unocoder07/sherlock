@@ -1,0 +1,17 @@
+version: v2
+# Remote plugins => no local protoc/protoc-gen-* install required.
+# Generate with:  cd contracts && buf generate
+plugins:
+  # ── Java (for backend services) ──
+  - remote: buf.build/protocolbuffers/java
+    out: gen-java
+
+  # ── Python (for AI services) ──
+  # Pinned to v27.2 so gencode targets the protobuf 5.27.2 runtime — a version the
+  # AI-service ML deps (insightface, onnxruntime) tolerate. Unpinned (:latest) tracked
+  # a protobuf-7 runtime those libs don't yet support. Keep in sync with the
+  # `protobuf==5.27.2` pin in ai-services/*/requirements.txt.
+  - remote: buf.build/protocolbuffers/python:v27.2
+    out: gen-python
+  - remote: buf.build/protocolbuffers/pyi:v27.2
+    out: gen-python

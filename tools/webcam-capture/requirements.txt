@@ -1,0 +1,6 @@
+# Host webcam capture client (M5). Run on the host — it needs the real camera.
+confluent-kafka==2.5.3
+minio==7.2.7
+opencv-python==4.10.0.84
+numpy==1.26.4
+protobuf==5.27.2

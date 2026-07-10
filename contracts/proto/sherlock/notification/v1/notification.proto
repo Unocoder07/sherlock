@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package sherlock.notification.v1;
+
+option java_multiple_files = true;
+option java_package = "com.sherlock.contracts.notification.v1";
+option java_outer_classname = "NotificationProto";
+
+// Topic: notifications  (producer: Notification Service)
+// Alerts raised on state transitions of interest (doc 02 §8). Persisted as an
+// audit record and pushed live so the dashboard can surface a CRITICAL banner.
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_INFO = 1;
+  SEVERITY_WARNING = 2;
+  SEVERITY_CRITICAL = 3;
+}
+
+message Notification {
+  string meeting_id = 1;
+  string participant_id = 2;
+  string notification_id = 3;     // stable id (also the DB primary key)
+  Severity severity = 4;
+  string rule = 5;                // rule that fired, e.g. "PROXY_SUSPECTED"
+  string title = 6;               // short label, e.g. "Possible proxy detected"
+  string message = 7;             // human-readable detail
+  string state = 8;               // clean label of the state that triggered the alert
+  int64 occurred_at_ms = 9;
+}

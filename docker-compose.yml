@@ -1,0 +1,312 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Sherlock — full local stack.
+# Includes the infra backbone and adds application services as milestones land.
+# For now it also hosts the `smoke` profile used to validate the pipeline (M0).
+#
+#   Start infra:  docker compose up -d
+#   Smoke test:   docker compose --profile smoke run --rm smoke
+# ─────────────────────────────────────────────────────────────────────────────
+name: sherlock
+
+include:
+  - docker-compose.infra.yml
+
+# The M0 pipeline smoke test lives in docker-compose.smoke.yml (joins the running
+# infra via the external `sherlock` network). Run it with:
+#   docker compose -f docker-compose.smoke.yml run --rm smoke
+
+services:
+  # ── M1: Meeting Service (control plane: lifecycle + roster + outbox publisher) ──
+  meeting-service:
+    build:
+      context: .
+      dockerfile: backend/services/meeting-service/Dockerfile
+    container_name: sherlock-meeting-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: "8090"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: sherlock
+      DB_USER: sherlock
+      DB_PASSWORD: sherlock
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8090/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks: [sherlock]
+
+  # ── M2: Identity Anchor Service (MOCK) — self-built reference lifecycle ──
+  identity-anchor-service:
+    build:
+      context: .
+      dockerfile: backend/services/identity-anchor-service/Dockerfile
+    container_name: sherlock-identity-anchor-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: "8091"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - "8091:8091"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8091/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks: [sherlock]
+
+  # ── M2: Evidence Fusion Engine — normalizes signals into evidence.events ──
+  evidence-fusion-service:
+    build:
+      context: .
+      dockerfile: backend/services/evidence-fusion-service/Dockerfile
+    container_name: sherlock-evidence-fusion-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: "8092"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - "8092:8092"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8092/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks: [sherlock]
+
+  # ── M2: Confidence Engine (STATEFUL) — belief scoring → confidence.updates ──
+  confidence-engine:
+    build:
+      context: .
+      dockerfile: backend/services/confidence-engine/Dockerfile
+    container_name: sherlock-confidence-engine
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: "8093"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: sherlock
+      DB_USER: sherlock
+      DB_PASSWORD: sherlock
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    ports:
+      - "8093:8093"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8093/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks: [sherlock]
+
+  # ── M3: Edge Gateway — consumes confidence.updates, fans out over STOMP/WS ──
+  edge-gateway:
+    build:
+      context: .
+      dockerfile: backend/services/edge-gateway/Dockerfile
+    container_name: sherlock-edge-gateway
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: "8094"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      SHERLOCK_CORS_ALLOWED_ORIGINS: "http://localhost:3000"
+    ports:
+      - "8094:8094"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8094/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks: [sherlock]
+
+  # ── M3: Frontend — Next.js live-verdict dashboard ──
+  frontend:
+    build:
+      context: ./frontend
+      # NEXT_PUBLIC_* are baked at build time; the browser talks to the gateway on
+      # the host, so bake the host URL (not the in-network service name).
+      args:
+        NEXT_PUBLIC_GATEWAY_WS_URL: "http://localhost:8094/ws"
+    container_name: sherlock-frontend
+    depends_on:
+      edge-gateway:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    healthcheck:
+      # 127.0.0.1, not localhost: Alpine resolves localhost to ::1 (IPv6) but the
+      # Next server listens on IPv4 0.0.0.0.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks: [sherlock]
+
+  # ── M4: Explanation Engine — confidence.updates -> English reasons -> verdict.enriched ──
+  explanation-engine:
+    build:
+      context: .
+      dockerfile: backend/services/explanation-engine/Dockerfile
+    container_name: sherlock-explanation-engine
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: "8095"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - "8095:8095"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8095/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks: [sherlock]
+
+  # ── M4: Timeline Service — verdict.enriched -> append-only history + timeline.events ──
+  timeline-service:
+    build:
+      context: .
+      dockerfile: backend/services/timeline-service/Dockerfile
+    container_name: sherlock-timeline-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: "8096"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: sherlock
+      DB_USER: sherlock
+      DB_PASSWORD: sherlock
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - "8096:8096"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8096/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks: [sherlock]
+
+  # ── M4: Notification Service — confidence.updates -> alerts (proxy/switch -> CRITICAL) ──
+  notification-service:
+    build:
+      context: .
+      dockerfile: backend/services/notification-service/Dockerfile
+    container_name: sherlock-notification-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: "8097"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: sherlock
+      DB_USER: sherlock
+      DB_PASSWORD: sherlock
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - "8097:8097"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8097/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks: [sherlock]
+
+  # ── M5: Video Processing (Python/ML) — media.frames.meta -> real embeddings -> video.signals ──
+  # Consumes frame refs (produced by the host tools/webcam-capture client), fetches the
+  # JPEG from MinIO, runs InsightFace (buffalo_l) for detection+embedding, and publishes
+  # video.signals with a real 512-d embedding_ref + lip-activity.
+  video-processing:
+    build:
+      context: .
+      dockerfile: ai-services/video-processing/Dockerfile
+    container_name: sherlock-video-processing
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: "8098"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_ACCESS_KEY: "sherlock"
+      MINIO_SECRET_KEY: "sherlock123"
+      BUCKET_MEDIA: "sherlock-media"
+      BUCKET_EMBEDDINGS: "sherlock-embeddings"
+      # Disable third-party import-time network version checks that otherwise hang
+      # model loading when the container has slow/limited outbound DNS.
+      NO_ALBUMENTATIONS_UPDATE: "1"
+      HF_HUB_OFFLINE: "1"
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "8098:8098"
+    healthcheck:
+      # 127.0.0.1, not localhost (Alpine/glibc IPv6 vs IPv4). /health only returns once
+      # models are loaded, so a pass means the service can actually process a frame.
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8098/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    networks: [sherlock]
+
+  # ── Further application services are added here in later milestones ──
+  # audio-processing        (M6)

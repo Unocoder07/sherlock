@@ -1,0 +1,49 @@
+# Keep the Docker build context lean. The service Dockerfiles copy source
+# (backend/ + contracts/) and compile inside the image, so none of the host
+# build output, caches, or tooling cruft belongs in the context.
+
+# ── Gradle / JVM build output & caches (the big one: ~270MB of build/ dirs) ──
+# NOTE: do NOT add `**/out/` here — Gradle output lives in build/, and `**/out/`
+# also strips the hexagonal source packages `application/port/out/` and
+# `adapter/out/`, which breaks the in-image compile ("package ... does not exist").
+**/build/
+**/.gradle/
+**/*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# ── VCS & IDE ──
+.git/
+.gitignore
+.github/
+.vscode/
+.idea/
+**/*.iml
+
+# ── Node / frontend ──
+**/node_modules/
+**/.next/
+**/dist/
+
+# ── Python ──
+**/__pycache__/
+**/.venv/
+**/venv/
+**/*.pyc
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+
+# ── Logs, env, local scratch ──
+*.log
+.env
+.env.*
+!.env.example
+
+# ── Docker / compose (not needed inside the build) ──
+docker-compose*.yml
+**/Dockerfile
+.dockerignore
+
+# ── Docs (not needed to compile) ──
+docs/
+README.md

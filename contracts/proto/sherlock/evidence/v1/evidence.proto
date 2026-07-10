@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package sherlock.evidence.v1;
+
+option java_multiple_files = true;
+option java_package = "com.sherlock.contracts.evidence.v1";
+option java_outer_classname = "EvidenceProto";
+
+// Topic: evidence.events  (producer: Evidence Fusion Engine)
+// The uniform, normalized evidence model — the anti-corruption boundary between
+// messy AI signals and the clean Confidence Engine.
+
+enum EvidenceType {
+  EVIDENCE_TYPE_UNSPECIFIED = 0;
+  EVIDENCE_TYPE_AV_BINDING = 1;
+  EVIDENCE_TYPE_FACE_MATCH = 2;          // consistency vs anchor
+  EVIDENCE_TYPE_VOICE_MATCH = 3;         // consistency vs anchor
+  EVIDENCE_TYPE_DOMINANCE = 4;
+  EVIDENCE_TYPE_FACE_PRESENT = 5;
+  EVIDENCE_TYPE_SCREEN_SHARE = 6;
+  EVIDENCE_TYPE_MEETING_EVENT = 7;
+  EVIDENCE_TYPE_METADATA_NAME = 8;       // LOWEST weight by design
+  EVIDENCE_TYPE_ANCHOR_MISMATCH = 9;
+  EVIDENCE_TYPE_AV_BINDING_BROKEN = 10;
+  EVIDENCE_TYPE_FACE_CHANGED = 11;
+  EVIDENCE_TYPE_VOICE_CHANGED = 12;
+  EVIDENCE_TYPE_MULTIPLE_PRESENCE = 13;  // multiple faces / speakers
+}
+
+enum EvidenceSource {
+  EVIDENCE_SOURCE_UNSPECIFIED = 0;
+  EVIDENCE_SOURCE_VIDEO = 1;
+  EVIDENCE_SOURCE_AUDIO = 2;
+  EVIDENCE_SOURCE_ANCHOR = 3;
+  EVIDENCE_SOURCE_MEETING = 4;
+}
+
+message EvidenceRecord {
+  string meeting_id = 1;
+  string participant_id = 2;
+  EvidenceType evidence_type = 3;
+  EvidenceSource source = 4;
+
+  float raw_value = 5;        // e.g. match/consistency score
+  float weight = 6;           // base weight for this evidence type
+  float reliability = 7;      // 0..1 confidence in the observation
+  int32 polarity = 8;         // +1 supports identity, -1 contradicts
+
+  int64 occurred_at_ms = 9;   // event time (drives decay in the engine)
+}

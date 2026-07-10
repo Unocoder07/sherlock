@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package sherlock.media.v1;
+
+option java_multiple_files = true;
+option java_package = "com.sherlock.contracts.media.v1";
+option java_outer_classname = "MediaProto";
+
+// Topic: media.frames.meta  (producer: Ingestion adapter)
+// IMPORTANT: raw bytes are NEVER put on Kafka. Media is written to the object
+// store and only this lightweight reference is published. AI services fetch the
+// bytes by `uri`.
+
+enum MediaKind {
+  MEDIA_KIND_UNSPECIFIED = 0;
+  MEDIA_KIND_VIDEO_FRAME = 1;
+  MEDIA_KIND_AUDIO_CHUNK = 2;
+}
+
+message MediaFrameMeta {
+  string meeting_id = 1;
+  string participant_id = 2;
+  MediaKind kind = 3;
+
+  // Object-store reference (e.g. s3://sherlock-media/<meeting>/<participant>/<ts>.jpg)
+  string uri = 4;
+
+  int64 captured_at_ms = 5;     // event time of capture
+  int32 sequence = 6;           // monotonic per participant+kind
+
+  // Optional lightweight metadata to avoid a fetch when possible.
+  int32 width = 7;
+  int32 height = 8;
+  int32 duration_ms = 9;        // for audio chunks
+  int32 sample_rate = 10;       // for audio chunks
+}
