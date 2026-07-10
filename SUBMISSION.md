@@ -3,11 +3,10 @@
 
 | | |
 |---|---|
-| **Author** | [Your Name] |
-| **Email** | [your.email@example.com] |
+| **Author** | [jeetu soni] |
+| **Email** | [jksoni07072001@gmail.com] |
 | **GitHub** | [@Unocoder07](https://github.com/Unocoder07) |
 | **Repository** | https://github.com/Unocoder07/sherlock |
-| **LinkedIn** | [your-linkedin-url] |
 | **Submitted** | July 2026 |
 
 ---
