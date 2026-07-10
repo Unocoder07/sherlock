@@ -45,3 +45,6 @@ contracts/gen-python/
 
 # ── Build / verify logs ────────────────────────
 *.log
+
+# webcam-capture local venv (host-only, do not commit)
+.venv312/
