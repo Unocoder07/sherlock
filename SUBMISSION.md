@@ -1,51 +1,53 @@
 # Sherlock — Interview Identity System
+
 ### Project Submission
 
-| | |
-|---|---|
-| **Author** | [Your Name] |
-| **Email** | [your.email@example.com] |
-| **GitHub** | [@Unocoder07](https://github.com/Unocoder07) |
-| **Repository** | https://github.com/Unocoder07/sherlock |
-| **LinkedIn** | [your-linkedin-url] |
-| **Submitted** | July 2026 |
+|                |                                              |
+| -------------- | -------------------------------------------- |
+| **Author**     | [Your Name]                                  |
+| **Email**      | [your.email@example.com]                     |
+| **GitHub**     | [@Unocoder07](https://github.com/Unocoder07) |
+| **Repository** | https://github.com/Unocoder07/sherlock       |
+| **Live Demo**  | 🔴 **[Open the live dashboard](LIVE_URL)**   |
+| **LinkedIn**   | [your-linkedin-url]                          |
+| **Submitted**  | July 2026                                    |
 
 ---
 
 ## 1. Executive Summary
 
-**Sherlock is a real-time system that verifies *who is actually sitting the interview* — continuously, with a confidence score and a human-readable justification — without ever being given a reference photo or voice sample up front.**
+**Sherlock is a real-time system that verifies _who is actually sitting the interview_ — continuously, with a confidence score and a human-readable justification — without ever being given a reference photo or voice sample up front.**
 
 Online interviews are easy to cheat: a stand-in ("proxy") can join under the candidate's
 name, the real candidate can hand the laptop to an expert for the hard questions, or the
 participant can simply show up as `Guest` with the camera off. Trusting the meeting
-platform's participant list ("the person named *John Doe* is John Doe") fails against all
+platform's participant list ("the person named _John Doe_ is John Doe") fails against all
 of these.
 
 Sherlock takes a fundamentally different approach: it **infers identity from a fusion of
 independent biometric and behavioural signals** (face, voice, speaker activity, lip-sync,
-meeting events), treats meeting metadata as the *weakest* input, and **builds the
+meeting events), treats meeting metadata as the _weakest_ input, and **builds the
 candidate's reference identity from the interview itself** — then monitors consistency
 against that self-built anchor for the rest of the session.
 
 The output is a live verdict per participant:
 
 > **Candidate: John Doe · Confidence: 94% · State: IDENTIFIED**
-> *Reasons: ✓ Voice stayed dominant · ✓ Same face present throughout · ✓ Lip-sync consistent*
+> _Reasons: ✓ Voice stayed dominant · ✓ Same face present throughout · ✓ Lip-sync consistent_
 
 ---
 
 ## 2. The Problem
 
-| Attack / Edge case | Why naive metadata fails |
-|---|---|
-| **Proxy interview** | A stand-in joins under the candidate's name and answers questions. |
-| **Candidate switching** | Real candidate answers the easy questions, then hands off to an expert. |
-| **Generic display names** | Participant shows as `iPhone`, `Guest`, `User`, `Galaxy S23`. |
-| **Camera off** | No face signal — the system must fall back to voice + behaviour. |
-| **Audio drops / network blips** | Signals vanish temporarily and must **not** collapse the verdict. |
+| Attack / Edge case              | Why naive metadata fails                                                |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| **Proxy interview**             | A stand-in joins under the candidate's name and answers questions.      |
+| **Candidate switching**         | Real candidate answers the easy questions, then hands off to an expert. |
+| **Generic display names**       | Participant shows as `iPhone`, `Guest`, `User`, `Galaxy S23`.           |
+| **Camera off**                  | No face signal — the system must fall back to voice + behaviour.        |
+| **Audio drops / network blips** | Signals vanish temporarily and must **not** collapse the verdict.       |
 
-**Design principle:** identity is a *probabilistic belief maintained over time*, not a
+**Design principle:** identity is a _probabilistic belief maintained over time_, not a
 database lookup. Meeting metadata is used only as a weak tie-breaker.
 
 ---
@@ -53,6 +55,7 @@ database lookup. Meeting metadata is used only as a weak tie-breaker.
 ## 3. How It Works
 
 ### 3.1 Evidence Fusion
+
 Each incoming signal is a piece of **evidence** with a source, weight, reliability, and
 timestamp. A stateful **Confidence Engine** maintains per-participant belief, decays stale
 evidence over time, and computes a score plus the reasons behind it.
@@ -70,8 +73,9 @@ Metadata (name) [weakest] ─┘
 ```
 
 ### 3.2 Zero-Knowledge Cold Start (the hard part)
+
 Sherlock starts with **zero biometric knowledge** of the candidate — no uploaded
-reference. It builds the reference *during* the interview and then checks consistency
+reference. It builds the reference _during_ the interview and then checks consistency
 against it, moving through a state machine:
 
 ```
@@ -83,6 +87,7 @@ participants           via lip-sync; lock anchor         did identity drift / sw
 ```
 
 ### 3.3 Verdict States
+
 `OBSERVING` · `ANCHORING` · `UNCERTAIN` · **`IDENTIFIED`** · **`PROXY_SUSPECTED`** ·
 **`CANDIDATE_SWITCHED`** · `SIGNAL_LOST` · `LEFT`
 
@@ -129,18 +134,18 @@ services follow a **hexagonal (ports & adapters) architecture**.
 
 ### Services
 
-| Service | Responsibility | Tech |
-|---|---|---|
-| **Meeting Service** | Meeting lifecycle, REST API, persistence | Java 21 / Spring Boot / Postgres |
-| **Video Processing** | Face detection + 512-d embeddings from webcam frames | Python / InsightFace / OpenCV |
-| **Identity Anchor** | Zero-knowledge cold-start; builds the self-reference | Java / Spring Boot |
-| **Evidence Fusion** | Maps raw signals → weighted evidence records | Java / Spring Boot |
-| **Confidence Engine** | Stateful per-participant belief, decay, verdict + state machine | Java / Spring Boot / Redis |
-| **Explanation Engine** | Renders numeric contributions into English reasons | Java / Spring Boot |
-| **Timeline Service** | Append-only history of transitions & score inflections | Java / Spring Boot / Postgres |
-| **Notification Service** | Raises CRITICAL alerts (proxy/switch), audit trail | Java / Spring Boot / Postgres |
-| **Edge Gateway** | Fans verdicts out over STOMP-over-WebSocket | Java / Spring Boot |
-| **Frontend** | Live dashboard: verdict, gauge, timeline, alerts | Next.js / React / TypeScript / Tailwind |
+| Service                  | Responsibility                                                  | Tech                                    |
+| ------------------------ | --------------------------------------------------------------- | --------------------------------------- |
+| **Meeting Service**      | Meeting lifecycle, REST API, persistence                        | Java 21 / Spring Boot / Postgres        |
+| **Video Processing**     | Face detection + 512-d embeddings from webcam frames            | Python / InsightFace / OpenCV           |
+| **Identity Anchor**      | Zero-knowledge cold-start; builds the self-reference            | Java / Spring Boot                      |
+| **Evidence Fusion**      | Maps raw signals → weighted evidence records                    | Java / Spring Boot                      |
+| **Confidence Engine**    | Stateful per-participant belief, decay, verdict + state machine | Java / Spring Boot / Redis              |
+| **Explanation Engine**   | Renders numeric contributions into English reasons              | Java / Spring Boot                      |
+| **Timeline Service**     | Append-only history of transitions & score inflections          | Java / Spring Boot / Postgres           |
+| **Notification Service** | Raises CRITICAL alerts (proxy/switch), audit trail              | Java / Spring Boot / Postgres           |
+| **Edge Gateway**         | Fans verdicts out over STOMP-over-WebSocket                     | Java / Spring Boot                      |
+| **Frontend**             | Live dashboard: verdict, gauge, timeline, alerts                | Next.js / React / TypeScript / Tailwind |
 
 ---
 
@@ -159,18 +164,18 @@ services follow a **hexagonal (ports & adapters) architecture**.
 
 The system was built **incrementally by milestone**, each with a demoable exit criterion.
 A key architectural decision was a **signal simulator** that drives the entire data plane
-with scripted signals — proving the full end-to-end architecture *before* wiring in the
+with scripted signals — proving the full end-to-end architecture _before_ wiring in the
 heavy ML, and keeping every milestone independently demoable.
 
-| Milestone | Deliverable | Status |
-|---|---|---|
-| **M0** | Foundations & Protobuf contracts; Kafka produce→consume smoke test | ✅ Complete |
-| **M1** | Meeting Service + REST API + Postgres | ✅ Complete |
-| **M2** | Skeleton data plane (mock anchor → fusion → confidence) + signal simulator | ✅ Complete |
-| **M3** | WebSocket gateway fan-out + Next.js live dashboard | ✅ Complete |
-| **M4** | Timeline + English explanation engine + proxy CRITICAL alerts | ✅ Complete |
-| **M5** | Real video AI: webcam → MinIO → InsightFace embeddings → signals | ✅ Code-complete |
-| **M6+** | Real audio / identity-anchor AI, model hardening, production readiness | 🔜 Roadmap |
+| Milestone | Deliverable                                                                | Status           |
+| --------- | -------------------------------------------------------------------------- | ---------------- |
+| **M0**    | Foundations & Protobuf contracts; Kafka produce→consume smoke test         | ✅ Complete      |
+| **M1**    | Meeting Service + REST API + Postgres                                      | ✅ Complete      |
+| **M2**    | Skeleton data plane (mock anchor → fusion → confidence) + signal simulator | ✅ Complete      |
+| **M3**    | WebSocket gateway fan-out + Next.js live dashboard                         | ✅ Complete      |
+| **M4**    | Timeline + English explanation engine + proxy CRITICAL alerts              | ✅ Complete      |
+| **M5**    | Real video AI: webcam → MinIO → InsightFace embeddings → signals           | ✅ Code-complete |
+| **M6+**   | Real audio / identity-anchor AI, model hardening, production readiness     | 🔜 Roadmap       |
 
 **Milestones M0–M4 are fully demoable end-to-end today** with zero ML, driven by the
 signal simulator. M5 (real webcam face processing) is implemented and containerised.
@@ -203,12 +208,13 @@ Watch the dashboard update **live**: the state badge climbs `OBSERVING → UNCER
 IDENTIFIED`, the confidence gauge rises, and the reason bars populate.
 
 ### Demo scenarios
-| Scenario | Result |
-|---|---|
-| `cold-start` | → **✓ IDENTIFIED** |
+
+| Scenario          | Result                               |
+| ----------------- | ------------------------------------ |
+| `cold-start`      | → **✓ IDENTIFIED**                   |
 | `proxy` / `relay` | → **! PROXY_SUSPECTED** (red banner) |
-| `switch` | → **⇄ CANDIDATE_SWITCHED** |
-| `camera-off` | held by voice — no false proxy |
+| `switch`          | → **⇄ CANDIDATE_SWITCHED**           |
+| `camera-off`      | held by voice — no false proxy       |
 
 > **Note on hardware:** the full 16-container stack (incl. the InsightFace ML service)
 > needs ~8 GB+ of RAM headroom. On a constrained machine, run
@@ -259,13 +265,7 @@ engine, the state machine, sequence diagrams, the API gateway, and the roadmap.
 
 ## 10. Demo
 
-*(Screen recording / screenshots of the live dashboard — see `docs/demo/` or the linked
-video below.)*
-
-- 🎥 **Demo video:** [add link — e.g. Loom / YouTube unlisted / Google Drive]
-- 🖼️ **Screenshots:** [add to `docs/demo/` and reference here]
-
----
-
-*Built by [Your Name] as a technical challenge submission. Full source, design docs, and
-per-milestone demo instructions are in the repository above.*
+- 🔴 **Live demo (hosted):** **[<LIVE_URL>](LIVE_URL)** — open the URL, paste a meeting
+  id (any UUID), and click **Watch**; the status dot turns green (Live) and the verdict
+  updates in real time.
+- 🎥 **Demo video:** [(https://drive.google.com/file/d/1Pv5huXFPA9MAlmlK7LCf6hnjTd2CQJvi/view?usp=drivesdk)]
